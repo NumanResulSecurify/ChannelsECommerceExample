@@ -268,3 +268,81 @@ Yukarıdaki kod, kanaldan tüm koordinatları okumak için ReadAllAsync yöntemi
 
 
 NOT :  Bir örnekte, yazıcı beş mesaj üretir ve kanala yazar. İki okuyucu, bu mesajları kanaldan okur. Ancak, her mesaj sadece bir kere okunur ve okunan mesaj diğer okuyucu tarafından tekrar okunamaz. Bu, üretici (producer)-tüketici (consumer) modelinin doğru şekilde işlemesini sağlar ve her mesajın sadece bir kere tüketilmesini garanti eder.
+
+
+NOT 2 : Peki channels gibi librarylerden önce bu gibi queue işleri nasıl yapılır yönetilirdi , bu modern librarylerin avantajı nedri ?
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Threading;
+
+public class Program
+{
+    private static readonly Queue<string> queue = new Queue<string>();
+    private static readonly object lockObject = new object();
+    private static readonly ManualResetEvent dataAvailable = new ManualResetEvent(false);
+
+    public static void Main()
+    {
+        Thread producerThread = new Thread(Producer);
+        Thread consumerThread = new Thread(Consumer);
+
+        producerThread.Start();
+        consumerThread.Start();
+
+        producerThread.Join();
+        consumerThread.Join();
+    }
+
+    private static void Producer()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            lock (lockObject)
+            {
+                queue.Enqueue($"Message {i}");
+                dataAvailable.Set(); // Verinin mevcut olduğunu belirtir.
+                Console.WriteLine($"Produced: Message {i}");
+            }
+            Thread.Sleep(500); // Üretim arası gecikme.
+        }
+    }
+
+    private static void Consumer()
+    {
+        while (true)
+        {
+            dataAvailable.WaitOne(); // Verinin mevcut olduğunu bekler.
+            string message = null;
+            lock (lockObject)
+            {
+                if (queue.Count > 0)
+                {
+                    message = queue.Dequeue();
+                }
+                if (queue.Count == 0)
+                {
+                    dataAvailable.Reset(); // Kuyruk boşsa, sinyali sıfırlar.
+                }
+            }
+            if (message != null)
+            {
+                Console.WriteLine($"Consumed: {message}");
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+}
+
+```
+
+Yukarıda gördüğünüz üzere moder queue kütüphaneleri olmasa kuyruk yönetimini komple manuel yapmamız gerekecek, güvenlik ve performans zaafiyetleri vereceğiz.
+
+
+- Queue<T> ve Threading: Basit iş parçacığı güvenliği sağlamak için kullanılan kuyruklar.
+- BlockingCollection<T>: Daha gelişmiş ve güvenli bir koleksiyon türü.
+- ManualResetEvent ve AutoResetEvent: Kuyrukların iş parçacığı senkronizasyonu için kullanılırdı.
+Bu yöntemler, kuyruklama işlemlerini yönetmek için farklı stratejiler ve yapı taşları sunar. Modern .NET kütüphaneleri, daha yüksek performans ve daha iyi iş parçacığı güvenliği için bu işlemleri daha basit ve etkili bir şekilde yapabilmek için System.Threading.Channels gibi yapılar sunar.
