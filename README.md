@@ -263,3 +263,8 @@ static async ValueTask ConsumeWithAwaitForeachAsync(
 }
 ```
 Yukarıdaki kod, kanaldan tüm koordinatları okumak için ReadAllAsync yöntemini kullanır.
+
+
+
+
+NOT :  Bir örnekte, yazıcı beş mesaj üretir ve kanala yazar. İki okuyucu, bu mesajları kanaldan okur. Ancak, her mesaj sadece bir kere okunur ve okunan mesaj diğer okuyucu tarafından tekrar okunamaz. Bu, üretici (producer)-tüketici (consumer) modelinin doğru şekilde işlemesini sağlar ve her mesajın sadece bir kere tüketilmesini garanti eder.
