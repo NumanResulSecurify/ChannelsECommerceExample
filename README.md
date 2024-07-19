@@ -264,8 +264,30 @@ static async ValueTask ConsumeWithAwaitForeachAsync(
 ```
 Yukarıdaki kod, kanaldan tüm koordinatları okumak için ReadAllAsync yöntemini kullanır.
 
+1. TryRead Metodu
+İşlev: TryRead metodu, kanaldan veri okumayı dener. Bu işlem, verinin mevcut olup olmadığını kontrol eder ve veri varsa okur. Eğer veri mevcut değilse, işlem başarısız olur ve false döner.
+Kullanım Durumu: Bu yöntem, veri olup olmadığını kontrol etmek ve varsa veriyi hemen işlemek için kullanılır. Senkron olarak çalışır ve veri varsa hemen okur, aksi takdirde hemen başarısız olur.
+Örnek Kullanım:
+```csharp
+if (channel.Reader.TryRead(out var item))
+{
+    // Veriyi işleyin
+}
+else
+{
+    // Veri mevcut değil, uygun bir işlem yapın
+}
+```
+Geri Dönüş: bool türünde bir değer döner; veri mevcutsa true, aksi takdirde false.
 
+2. Read Metodu
+İşlev: Read metodu, kanaldan veri okur ve veri mevcut değilse çağıran iş parçacığını bloklar (bekletir) ve veri geldiğinde okur. Bu metod, veri kesinlikle mevcut olduğunda döner.
+Kullanım Durumu: Bu yöntem, verinin mevcut olup olmadığını kontrol etmek yerine, veri geldiğinde kesin olarak okumak için kullanılır. Asenkron olarak çalışır ve veri gelene kadar bloklanır.
 
+```csharp
+var item = await channel.Reader.ReadAsync();
+// Veriyi işleyin
+```
 
 NOT :  Bir örnekte, yazıcı beş mesaj üretir ve kanala yazar. İki okuyucu, bu mesajları kanaldan okur. Ancak, her mesaj sadece bir kere okunur ve okunan mesaj diğer okuyucu tarafından tekrar okunamaz. Bu, üretici (producer)-tüketici (consumer) modelinin doğru şekilde işlemesini sağlar ve her mesajın sadece bir kere tüketilmesini garanti eder.
 
